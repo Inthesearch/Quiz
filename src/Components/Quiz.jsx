@@ -1,11 +1,40 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import QUESTIONS from "../questions.js";
 import quizCompleteImg from "../assets/quiz-complete.png";
+import Question from "./Question.jsx";
 
 export default function Quiz() {
   const [givenAnswer, setGivenAnswer] = useState([]);
-  const questionIndex = givenAnswer.length;
+  const [answerValidation, setAnswerValidation] = useState("");
+  const questionIndex =
+    answerValidation === "" ? givenAnswer.length : givenAnswer.length - 1;
   const ifQuizCompleted = questionIndex === QUESTIONS.length;
+
+  const handleAnswerClick = useCallback(
+    function handleAnswerClick(selectedAnswer) {
+      setAnswerValidation("answered");
+      setGivenAnswer((prevAnswers) => {
+        return [...prevAnswers, selectedAnswer];
+      });
+
+      setTimeout(() => {
+        if (selectedAnswer === QUESTIONS[questionIndex].answers[0]) {
+          setAnswerValidation("correct");
+        } else {
+          setAnswerValidation("wrong");
+        }
+        setTimeout(() => {
+          setAnswerValidation("");
+        }, 5000);
+      }, 2000);
+    },
+    [questionIndex]
+  );
+
+  const handleSkipAnswer = useCallback(
+    () => handleAnswerClick(null),
+    [handleAnswerClick]
+  );
   if (ifQuizCompleted) {
     return (
       <div id="summary">
@@ -14,30 +43,18 @@ export default function Quiz() {
       </div>
     );
   }
-  const shuffledAnswers = [...QUESTIONS[questionIndex].answers];
-  shuffledAnswers.sort(() => Math.random() - 0.5);
-
-  function handleAnswerClick(selectedAnswer) {
-    setGivenAnswer((prevAnswers) => {
-      return [...prevAnswers, selectedAnswer];
-    });
-  }
 
   return (
     <div id="quiz">
-      <div id="question">
-        <h2>{QUESTIONS[questionIndex].text}</h2>
-
-        <ul id="answers">
-          {shuffledAnswers.map((answers) => (
-            <li key={answers} className="answer">
-              <button onClick={() => handleAnswerClick(answers)}>
-                {answers}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <Question
+        key={questionIndex}
+        answers={QUESTIONS[questionIndex].answers}
+        answerState={answerValidation}
+        selectedAnswer={givenAnswer[givenAnswer.length - 1]}
+        onSelect={handleAnswerClick}
+        question={QUESTIONS[questionIndex].text}
+        onTimeOut={handleSkipAnswer}
+      />
     </div>
   );
 }
